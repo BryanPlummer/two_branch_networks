@@ -1,5 +1,5 @@
 # two_branch_networks
-Pytorch implementation of the two branch network described in [these](http://slazebni.cs.illinois.edu/publications/cvpr16_structure.pdf) [papers](https://arxiv.org/pdf/1704.03470.pdf).
+Pytorch implementation of the two branch embedding network described in [these](http://slazebni.cs.illinois.edu/publications/cvpr16_structure.pdf) [papers](https://arxiv.org/pdf/1704.03470.pdf).
 
 This code was tested on an Ubuntu 16.04 system using Pytorch version 0.1.12.  It is based on the [MNIST Pytorch tutorial](http://pytorch.org/).
 

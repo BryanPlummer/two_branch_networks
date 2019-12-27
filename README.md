@@ -2,6 +2,8 @@
 
 This repo is a pytorch implemention of [Two Branch Networks (Liwei Wang, et al.)](https://github.com/lwwang/Two_branch_network) and has been modified to enable testing different settings as done in [this paper](http://openaccess.thecvf.com/content_ICCV_2019/papers/Burns_Language_Features_Matter_Effective_Language_Representations_for_Vision-Language_Tasks_ICCV_2019_paper.pdf) like fine-tuning a word embedding, using different language models.
 
+This code has been tested using python 2.7 and pytorch 1.0.1.
+
 ## Datasets:
 
 You can download and unpack the caption data using:

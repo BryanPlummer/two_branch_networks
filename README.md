@@ -45,7 +45,7 @@ Below we provide an example of one of our runs training and testing a self-atten
   im2sent: 68.7 93.5 97.4 sent2im: 54.5 85.6 93.3 mr: 82.2
   ```
 
-These are results using this fork of the official [tensorflow implementation](https://github.com/BryanPlummer/Two_branch_network), but you should get comparaible performance with this repo.
+These are results using [this fork](https://github.com/BryanPlummer/Two_branch_network) of the official tensorflow implementation, but you should get comparaible performance with this repo.
 
 ## References
 
@@ -73,7 +73,7 @@ If you use this repo in your project please cite the following papers on the Two
 ```
 
 
-In addition, if you use the MT GrOVLE word embeddings or the self-attention model please also cite (or to compare to this model using ResNet features):
+In addition, if you use the MT GrOVLE word embeddings, want to compare to performance using ResNet features, or use the self-attention model please also cite:
 
 ``` markdown
 @InProceedings{burnsLanguage2019,

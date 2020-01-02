@@ -21,18 +21,22 @@ def main():
     train_loader = DatasetLoader(FLAGS, 'train')
 
     vocab_filename = os.path.join(FLAGS.feat_path, FLAGS.dataset, 'vocab.pkl')
-    word_embedding_filename = os.path.join('data', 'mt_grovle.txt')
+    word_embedding_filename = os.path.join(FLAGS.feat_path, 'mt_grovle.txt')
     embedding_length = 300
     print('Loading vocab')
     vecs = train_loader.build_vocab(vocab_filename, word_embedding_filename, embedding_length)
     print('Loading complete')
+
     kwargs = {'num_workers': 8, 'pin_memory': True} if FLAGS.cuda else {}
     train_loader = torch.utils.data.DataLoader(train_loader,
             batch_size=FLAGS.batch_size, shuffle=True, **kwargs)
     test_loader = DatasetLoader(FLAGS, 'test')
     val_loader = DatasetLoader(FLAGS, 'val')
-    test_loader.build_vocab(vocab_filename, word_embedding_filename, embedding_length)
-    val_loader.build_vocab(vocab_filename, word_embedding_filename, embedding_length)
+
+    # Assumes the train_loader has already built the vocab and can be loaded
+    # from the cached file.
+    test_loader.build_vocab(vocab_filename)
+    val_loader.build_vocab(vocab_filename)
 
     image_feature_dim = train_loader.dataset.im_feats.shape[-1]
     model = ImageSentenceEmbeddingNetwork(FLAGS, vecs, image_feature_dim)
@@ -97,17 +101,15 @@ def main():
 def train(train_loader, model, optimizer, epoch):
     average_loss = RunningAverage()
     steps_per_epoch = len(train_loader.dataset) // FLAGS.batch_size
-    #train_loader.shuffle_inds()
-    model.train()
     display_interval = int(np.floor(steps_per_epoch * FLAGS.display_interval))
-    #for i in range(steps_per_epoch):
+
+    model.train()
     for batch_idx, (im_feats, sent_feats) in enumerate(train_loader):
         labels = np.repeat(np.eye(im_feats.size(0), dtype=np.float32), FLAGS.sample_size, axis=0)
-        #im_feats, sent_feats, labels = train_loader.get_batch(i, FLAGS.batch_size, FLAGS.sample_size)
-        #im_feats, sent_feats, labels = torch.from_numpy(im_feats), torch.from_numpy(sent_feats), torch.from_numpy(labels.astype(np.float32))
         labels = torch.from_numpy(labels)
         if FLAGS.cuda:
             im_feats, sent_feats, labels = im_feats.cuda(), sent_feats.cuda(), labels.cuda()
+
         im_feats, sent_feats, labels = Variable(im_feats), Variable(sent_feats), Variable(labels)
         sent_feats = sent_feats.view(labels.size(0), -1)
         loss, i_embed, s_embed = model.train_forward(im_feats, sent_feats, labels)
@@ -120,7 +122,7 @@ def train(train_loader, model, optimizer, epoch):
         optimizer.step()
 
         if batch_idx % display_interval == 0:
-            print('Epoch: %d Step: [%d/%d] Loss: %f' % (epoch, batch_idx, steps_per_epoch, average_loss.avg()))
+            print('Epoch: {:d} Step: [{:d}/{:d}] Loss: {:f}'.format(epoch, batch_idx, steps_per_epoch, average_loss.avg()))
 
 def test(test_loader, model):
     model.eval()
@@ -134,12 +136,11 @@ def test(test_loader, model):
     sentences, images = sentences.data, images.data
     im_labels = torch.from_numpy(test_loader.labels)
 
-    # since we use topk
     dist_matrix = pdist(sentences, images)
     sent2im = recallAtK(dist_matrix, im_labels)
     im2sent = recallAtK(dist_matrix.t(), im_labels.t())
     recalls = np.append(im2sent, sent2im)
-    mR = np.sum(recalls) / float(len(recalls))
+    mR = np.mean(recalls)
     print('\n{} set - mR: {:.1f} im2sent: {:.1f} {:.1f} {:.1f} sent2im: {:.1f} {:.1f} {:.1f}\n'.format(test_loader.split, mR, *recalls))
     return mR
 

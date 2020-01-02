@@ -15,7 +15,7 @@ def load_word_embeddings(word_embedding_filename, embedding_length):
         word_embeddings = {}
         for i, line in enumerate(f):
             if i % 10000 == 0:
-                print('Reading word embedding vector %i' % i)
+                print('Reading word embedding vector {:d}'.format(i))
                     
             line = line.strip()
             if not line:
@@ -135,9 +135,8 @@ class DatasetLoader:
         print('Loading complete')
         self.split = split
         self.sample_size = args.sample_size
-        self.sent_inds = range(len(self.captions)) # we will shuffle this every epoch for training
 
-    def build_vocab(self, cache_filename, word_embeddings_filename = None, embedding_length = 300):
+    def build_vocab(self, cache_filename, word_embeddings_filename=None, embedding_length=300):
         if os.path.exists(cache_filename):
             vocab_data = pickle.load(open(cache_filename, 'rb'))
             self.max_length = vocab_data['max_length']
@@ -171,20 +170,10 @@ class DatasetLoader:
             tokens = [self.tok2idx[token] for token in caption if token in self.tok2idx]
             self.sent_feats[i, :len(tokens)] = tokens
 
-
-        self.sent_feat_shape = self.sent_feats.shape
         return vecs
 
     def __len__(self):
         return len(self.captions)
-
-    def shuffle_inds(self):
-        '''
-        shuffle the indices in training (run this once per epoch)
-        nop for testing and validation
-        '''
-        if self.split == 'train':
-            np.random.shuffle(self.sent_inds)
 
     def __getitem__(self, index):
         im = self.cap2im[index]
@@ -196,30 +185,3 @@ class DatasetLoader:
         sent_feat = self.sent_feats[sample_index]
         return im_feat, sent_feat
 
-    def sample_items(self, sample_inds, sample_size):
-        '''
-        for each index, return the  relevant image and sentence features
-        sample_inds: a list of sent indices
-        sample_size: number of neighbor sentences to sample per index.
-        '''
-        im_feats_b = self.im_feats[self.cap2im[sample_inds],:]
-        sent_feats_b = []
-        for ind, im in zip(sample_inds, self.cap2im[sample_inds]):
-            # ind is an index for sentence
-            sample_index = np.random.choice(
-                    [i for i in self.im2cap[im] if i != ind],
-                    sample_size - 1, replace=False)
-            sample_index = sorted(np.append(sample_index, ind))
-            sent_feats_b.append(self.sent_feats[sample_index])
-        sent_feats_b = np.concatenate(sent_feats_b, axis=0)
-        return (im_feats_b, sent_feats_b)
-
-    def get_batch(self, batch_index, batch_size, sample_size):
-        start_ind = batch_index * batch_size
-        end_ind = start_ind + batch_size
-        sample_inds = self.sent_inds[start_ind : end_ind]
-        (im_feats, sent_feats) = self.sample_items(sample_inds, sample_size)
-        # Each row of the labels is the label for one sentence,
-        # with corresponding image index sent to True.
-        labels = np.repeat(np.eye(batch_size, dtype=bool), sample_size, axis=0)
-        return(im_feats, sent_feats, labels)
